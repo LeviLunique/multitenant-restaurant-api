@@ -123,10 +123,20 @@ jobs:
           SONAR_PROJECT_KEY: ${{ vars.SONAR_PROJECT_KEY }}
           SONAR_ORGANIZATION: ${{ vars.SONAR_ORGANIZATION }}
           SONAR_REGION: ${{ vars.SONAR_REGION }}
-        run: >
-          mvn --batch-mode --no-transfer-progress verify
-          org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
-          -Dsonar.projectKey=${SONAR_PROJECT_KEY}
-          -Dsonar.organization=${SONAR_ORGANIZATION}
-          -Dsonar.region=${SONAR_REGION:-eu}
-          -Dsonar.qualitygate.wait=true
+        shell: bash
+        run: |
+          SONAR_ARGS=(
+            "--batch-mode"
+            "--no-transfer-progress"
+            "verify"
+            "org.sonarsource.scanner.maven:sonar-maven-plugin:sonar"
+            "-Dsonar.projectKey=${SONAR_PROJECT_KEY}"
+            "-Dsonar.organization=${SONAR_ORGANIZATION}"
+            "-Dsonar.qualitygate.wait=true"
+          )
+
+          if [[ "${SONAR_REGION}" == "us" ]]; then
+            SONAR_ARGS+=("-Dsonar.region=us")
+          fi
+
+          mvn "${SONAR_ARGS[@]}"
