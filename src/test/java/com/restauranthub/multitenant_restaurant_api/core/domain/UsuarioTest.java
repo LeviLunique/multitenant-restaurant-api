@@ -3,8 +3,11 @@ package com.restauranthub.multitenant_restaurant_api.core.domain;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
 
+import com.restauranthub.multitenant_restaurant_api.core.domain.TipoUsuarioEnum;
 import com.restauranthub.multitenant_restaurant_api.core.exception.BusinessException;
 
 class UsuarioTest {
@@ -30,5 +33,26 @@ class UsuarioTest {
 		var exception = assertThrows(BusinessException.class, () -> new Usuario(1L, "Levi Lunique", "invalid-email"));
 
 		assertEquals("INVALID_USER_EMAIL", exception.getCode());
+	}
+
+	@Test
+	void shouldAssociateUserTypeToUser() {
+		var usuario = new Usuario(1L, "Levi Lunique", "levi@example.com");
+		var tipoUsuario = new TipoUsuario(2L, "Cliente", TipoUsuarioEnum.CLIENTE);
+
+		usuario.associarTipoUsuario(tipoUsuario);
+
+		assertEquals(List.of(tipoUsuario), usuario.getTiposUsuario().stream().toList());
+	}
+
+	@Test
+	void shouldRejectDuplicatedUserTypeAssociation() {
+		var usuario = new Usuario(1L, "Levi Lunique", "levi@example.com");
+		var tipoUsuario = new TipoUsuario(2L, "Cliente", TipoUsuarioEnum.CLIENTE);
+		usuario.associarTipoUsuario(tipoUsuario);
+
+		var exception = assertThrows(BusinessException.class, () -> usuario.associarTipoUsuario(tipoUsuario));
+
+		assertEquals("USER_ALREADY_ASSOCIATED_WITH_TYPE", exception.getCode());
 	}
 }

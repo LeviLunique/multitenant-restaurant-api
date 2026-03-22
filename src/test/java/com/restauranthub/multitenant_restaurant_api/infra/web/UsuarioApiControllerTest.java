@@ -2,6 +2,8 @@ package com.restauranthub.multitenant_restaurant_api.infra.web;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -26,6 +28,8 @@ class UsuarioApiControllerTest {
 	private static final String MARIA_SILVA = "Maria Silva";
 	private static final String MARIA_EMAIL = "maria@example.com";
 	private static final String OUTRO_LEVI = "Outro Levi";
+	private static final String LEVI_ATUALIZADO = "Levi Atualizado";
+	private static final String LEVI_ATUALIZADO_EMAIL = "levi.atualizado@example.com";
 
 	@Autowired
 	private MockMvc mockMvc;
@@ -50,7 +54,8 @@ class UsuarioApiControllerTest {
 				.andExpect(status().isCreated())
 				.andExpect(jsonPath("$.id").isNumber())
 				.andExpect(jsonPath("$.nome").value(LEVI_LUNIQUE))
-				.andExpect(jsonPath("$.email").value(LEVI_EMAIL));
+				.andExpect(jsonPath("$.email").value(LEVI_EMAIL))
+				.andExpect(jsonPath("$.tiposUsuario").isEmpty());
 	}
 
 	@Test
@@ -61,7 +66,8 @@ class UsuarioApiControllerTest {
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.id").value(userId))
 				.andExpect(jsonPath("$.nome").value(LEVI_LUNIQUE))
-				.andExpect(jsonPath("$.email").value(LEVI_EMAIL));
+				.andExpect(jsonPath("$.email").value(LEVI_EMAIL))
+				.andExpect(jsonPath("$.tiposUsuario").isEmpty());
 	}
 
 	@Test
@@ -85,6 +91,32 @@ class UsuarioApiControllerTest {
 				.content(requestBody))
 				.andExpect(status().isUnprocessableEntity())
 				.andExpect(jsonPath("$.code").value("USER_EMAIL_ALREADY_EXISTS"));
+	}
+
+	@Test
+	void shouldUpdateUserThroughHttp() throws Exception {
+		var userId = criarUsuario(LEVI_LUNIQUE, LEVI_EMAIL);
+		var requestBody = buildUserRequestBody(LEVI_ATUALIZADO, LEVI_ATUALIZADO_EMAIL);
+
+		mockMvc.perform(put("/usuarios/{id}", userId)
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(requestBody))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.id").value(userId))
+				.andExpect(jsonPath("$.nome").value(LEVI_ATUALIZADO))
+				.andExpect(jsonPath("$.email").value(LEVI_ATUALIZADO_EMAIL));
+	}
+
+	@Test
+	void shouldDeleteUserThroughHttp() throws Exception {
+		var userId = criarUsuario(LEVI_LUNIQUE, LEVI_EMAIL);
+
+		mockMvc.perform(delete("/usuarios/{id}", userId))
+				.andExpect(status().isNoContent());
+
+		mockMvc.perform(get("/usuarios/{id}", userId))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.code").value("USER_NOT_FOUND"));
 	}
 
 	private long criarUsuario(String nome, String email) throws Exception {
