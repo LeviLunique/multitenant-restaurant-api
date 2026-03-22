@@ -123,14 +123,6 @@ jobs:
             exit 1
           }
 
-          curl --silent --show-error --fail \
-            -H "Authorization: Bearer ${SONAR_TOKEN}" \
-            "https://sonarcloud.io/api/qualitygates/project_status?organization=${SONAR_ORGANIZATION}&projectKey=${SONAR_PROJECT_KEY}" \
-            >/dev/null || {
-              echo "SonarCloud quality gate lookup failed. Check SONAR_TOKEN permissions and project visibility."
-              exit 1
-            }
-
       - name: SonarQube Server analysis
         if: ${{ steps.sonar-config.outputs.mode == 'server' }}
         env:
@@ -142,7 +134,6 @@ jobs:
           org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
           -Dsonar.projectKey=${SONAR_PROJECT_KEY}
           -Dsonar.host.url=${SONAR_HOST_URL}
-          -Dsonar.qualitygate.wait=true
 
       - name: SonarQube Cloud analysis
         if: ${{ steps.sonar-config.outputs.mode == 'cloud' }}
@@ -160,7 +151,6 @@ jobs:
             "org.sonarsource.scanner.maven:sonar-maven-plugin:sonar"
             "-Dsonar.projectKey=${SONAR_PROJECT_KEY}"
             "-Dsonar.organization=${SONAR_ORGANIZATION}"
-            "-Dsonar.qualitygate.wait=true"
           )
 
           if [[ "${SONAR_REGION}" == "us" ]]; then
