@@ -1,9 +1,9 @@
 package com.restauranthub.multitenant_restaurant_api.infra.web;
 
-import java.net.URI;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -25,8 +25,6 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class UsuarioApiController {
 
-	private static final String USUARIOS_PATH = "/usuarios/";
-
 	private final UsuarioController usuarioController;
 
 	@PostMapping
@@ -34,7 +32,11 @@ public class UsuarioApiController {
 		var criarUsuarioInputDto = new CriarUsuarioInputDto(usuarioJson.nome(), usuarioJson.email());
 		var id = usuarioController.criar(criarUsuarioInputDto);
 		var usuarioCriado = usuarioController.obterPorId(id);
-		return ResponseEntity.created(URI.create(USUARIOS_PATH + id)).body(map(usuarioCriado));
+		var location = ServletUriComponentsBuilder.fromCurrentRequest()
+				.path("/{id}")
+				.buildAndExpand(id)
+				.toUri();
+		return ResponseEntity.created(location).body(map(usuarioCriado));
 	}
 
 	@GetMapping("/{id}")

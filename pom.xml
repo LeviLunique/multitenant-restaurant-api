@@ -13,7 +13,7 @@
 
 	<groupId>com.restauranthub</groupId>
 	<artifactId>multitenant-restaurant-api</artifactId>
-	<version>0.0.2-SNAPSHOT</version>
+	<version>0.0.2-1-SNAPSHOT</version>
 	<name>multitenant-restaurant-api</name>
 	<description>Multitenant restaurant API built with Clean Architecture</description>
 
