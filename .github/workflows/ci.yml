@@ -103,6 +103,34 @@ jobs:
           java-version: "21"
           cache: maven
 
+      - name: Validate SonarQube Cloud access
+        if: ${{ steps.sonar-config.outputs.mode == 'cloud' }}
+        shell: bash
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_PROJECT_KEY: ${{ vars.SONAR_PROJECT_KEY }}
+          SONAR_ORGANIZATION: ${{ vars.SONAR_ORGANIZATION }}
+        run: |
+          echo "Validating Sonar configuration for organization '${SONAR_ORGANIZATION}' and project '${SONAR_PROJECT_KEY}'."
+
+          PROJECT_RESPONSE=$(curl --silent --show-error --fail \
+            -H "Authorization: Bearer ${SONAR_TOKEN}" \
+            "https://sonarcloud.io/api/projects/search?organization=${SONAR_ORGANIZATION}&projects=${SONAR_PROJECT_KEY}")
+
+          echo "${PROJECT_RESPONSE}" | grep -q "\"key\":\"${SONAR_PROJECT_KEY}\"" || {
+            echo "SonarCloud project lookup failed for organization '${SONAR_ORGANIZATION}' and project '${SONAR_PROJECT_KEY}'."
+            echo "Check repository variables SONAR_ORGANIZATION and SONAR_PROJECT_KEY."
+            exit 1
+          }
+
+          curl --silent --show-error --fail \
+            -H "Authorization: Bearer ${SONAR_TOKEN}" \
+            "https://sonarcloud.io/api/qualitygates/project_status?organization=${SONAR_ORGANIZATION}&projectKey=${SONAR_PROJECT_KEY}" \
+            >/dev/null || {
+              echo "SonarCloud quality gate lookup failed. Check SONAR_TOKEN permissions and project visibility."
+              exit 1
+            }
+
       - name: SonarQube Server analysis
         if: ${{ steps.sonar-config.outputs.mode == 'server' }}
         env:
