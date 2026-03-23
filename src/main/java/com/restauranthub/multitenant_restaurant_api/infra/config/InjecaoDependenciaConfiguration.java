@@ -4,29 +4,42 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import com.restauranthub.multitenant_restaurant_api.core.controller.TipoUsuarioController;
+import com.restauranthub.multitenant_restaurant_api.core.controller.RestauranteController;
 import com.restauranthub.multitenant_restaurant_api.core.controller.UsuarioController;
+import com.restauranthub.multitenant_restaurant_api.core.gateway.RestauranteGateway;
 import com.restauranthub.multitenant_restaurant_api.core.gateway.TipoUsuarioGateway;
 import com.restauranthub.multitenant_restaurant_api.core.gateway.UsuarioGateway;
+import com.restauranthub.multitenant_restaurant_api.core.mapper.RestauranteMapper;
 import com.restauranthub.multitenant_restaurant_api.core.mapper.TipoUsuarioMapper;
 import com.restauranthub.multitenant_restaurant_api.core.mapper.UsuarioMapper;
+import com.restauranthub.multitenant_restaurant_api.core.usecase.AtualizarRestauranteUsecase;
+import com.restauranthub.multitenant_restaurant_api.core.usecase.AtualizarRestauranteUsecaseImpl;
 import com.restauranthub.multitenant_restaurant_api.core.usecase.AssociarTipoUsuarioAoUsuarioUsecase;
 import com.restauranthub.multitenant_restaurant_api.core.usecase.AssociarTipoUsuarioAoUsuarioUsecaseImpl;
 import com.restauranthub.multitenant_restaurant_api.core.usecase.AtualizarTipoUsuarioUsecase;
 import com.restauranthub.multitenant_restaurant_api.core.usecase.AtualizarTipoUsuarioUsecaseImpl;
 import com.restauranthub.multitenant_restaurant_api.core.usecase.AtualizarUsuarioUsecase;
 import com.restauranthub.multitenant_restaurant_api.core.usecase.AtualizarUsuarioUsecaseImpl;
+import com.restauranthub.multitenant_restaurant_api.core.usecase.BuscarRestaurantePorIdUsecase;
+import com.restauranthub.multitenant_restaurant_api.core.usecase.BuscarRestaurantePorIdUsecaseImpl;
 import com.restauranthub.multitenant_restaurant_api.core.usecase.BuscarTipoUsuarioPorIdUsecase;
 import com.restauranthub.multitenant_restaurant_api.core.usecase.BuscarTipoUsuarioPorIdUsecaseImpl;
 import com.restauranthub.multitenant_restaurant_api.core.usecase.BuscarUsuarioPorIdUsecase;
 import com.restauranthub.multitenant_restaurant_api.core.usecase.BuscarUsuarioPorIdUsecaseImpl;
+import com.restauranthub.multitenant_restaurant_api.core.usecase.CriarRestauranteUsecase;
+import com.restauranthub.multitenant_restaurant_api.core.usecase.CriarRestauranteUsecaseImpl;
 import com.restauranthub.multitenant_restaurant_api.core.usecase.CriarTipoUsuarioUsecase;
 import com.restauranthub.multitenant_restaurant_api.core.usecase.CriarTipoUsuarioUsecaseImpl;
 import com.restauranthub.multitenant_restaurant_api.core.usecase.CriarUsuarioUsecase;
 import com.restauranthub.multitenant_restaurant_api.core.usecase.CriarUsuarioUsecaseImpl;
+import com.restauranthub.multitenant_restaurant_api.core.usecase.ListarRestaurantesUsecase;
+import com.restauranthub.multitenant_restaurant_api.core.usecase.ListarRestaurantesUsecaseImpl;
 import com.restauranthub.multitenant_restaurant_api.core.usecase.ListarTiposUsuarioUsecase;
 import com.restauranthub.multitenant_restaurant_api.core.usecase.ListarTiposUsuarioUsecaseImpl;
 import com.restauranthub.multitenant_restaurant_api.core.usecase.ListarUsuariosUsecase;
 import com.restauranthub.multitenant_restaurant_api.core.usecase.ListarUsuariosUsecaseImpl;
+import com.restauranthub.multitenant_restaurant_api.core.usecase.RemoverRestauranteUsecase;
+import com.restauranthub.multitenant_restaurant_api.core.usecase.RemoverRestauranteUsecaseImpl;
 import com.restauranthub.multitenant_restaurant_api.core.usecase.RemoverTipoUsuarioUsecase;
 import com.restauranthub.multitenant_restaurant_api.core.usecase.RemoverTipoUsuarioUsecaseImpl;
 import com.restauranthub.multitenant_restaurant_api.core.usecase.RemoverUsuarioUsecase;
@@ -43,6 +56,11 @@ public class InjecaoDependenciaConfiguration {
 	@Bean
 	public TipoUsuarioMapper tipoUsuarioMapper() {
 		return new TipoUsuarioMapper();
+	}
+
+	@Bean
+	public RestauranteMapper restauranteMapper() {
+		return new RestauranteMapper();
 	}
 
 	@Bean
@@ -68,6 +86,31 @@ public class InjecaoDependenciaConfiguration {
 	@Bean
 	public RemoverUsuarioUsecase removerUsuarioUsecase(UsuarioGateway usuarioGateway) {
 		return new RemoverUsuarioUsecaseImpl(usuarioGateway);
+	}
+
+	@Bean
+	public CriarRestauranteUsecase criarRestauranteUsecase(RestauranteGateway restauranteGateway, UsuarioGateway usuarioGateway) {
+		return new CriarRestauranteUsecaseImpl(restauranteGateway, usuarioGateway);
+	}
+
+	@Bean
+	public BuscarRestaurantePorIdUsecase buscarRestaurantePorIdUsecase(RestauranteGateway restauranteGateway) {
+		return new BuscarRestaurantePorIdUsecaseImpl(restauranteGateway);
+	}
+
+	@Bean
+	public ListarRestaurantesUsecase listarRestaurantesUsecase(RestauranteGateway restauranteGateway) {
+		return new ListarRestaurantesUsecaseImpl(restauranteGateway);
+	}
+
+	@Bean
+	public AtualizarRestauranteUsecase atualizarRestauranteUsecase(RestauranteGateway restauranteGateway, UsuarioGateway usuarioGateway) {
+		return new AtualizarRestauranteUsecaseImpl(restauranteGateway, usuarioGateway);
+	}
+
+	@Bean
+	public RemoverRestauranteUsecase removerRestauranteUsecase(RestauranteGateway restauranteGateway) {
+		return new RemoverRestauranteUsecaseImpl(restauranteGateway);
 	}
 
 	@Bean
@@ -138,5 +181,22 @@ public class InjecaoDependenciaConfiguration {
 				associarTipoUsuarioAoUsuarioUsecase,
 				tipoUsuarioMapper,
 				usuarioMapper);
+	}
+
+	@Bean
+	public RestauranteController restauranteController(
+			CriarRestauranteUsecase criarRestauranteUsecase,
+			BuscarRestaurantePorIdUsecase buscarRestaurantePorIdUsecase,
+			ListarRestaurantesUsecase listarRestaurantesUsecase,
+			AtualizarRestauranteUsecase atualizarRestauranteUsecase,
+			RemoverRestauranteUsecase removerRestauranteUsecase,
+			RestauranteMapper restauranteMapper) {
+		return new RestauranteController(
+				criarRestauranteUsecase,
+				buscarRestaurantePorIdUsecase,
+				listarRestaurantesUsecase,
+				atualizarRestauranteUsecase,
+				removerRestauranteUsecase,
+				restauranteMapper);
 	}
 }
