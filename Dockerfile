@@ -1,6 +1,5 @@
 ARG MAVEN_BUILD_IMAGE=maven:3.9.11-eclipse-temurin-21
 ARG JAVA_RUNTIME_IMAGE=eclipse-temurin:21-jre
-ARG APP_JAR_FILE=multitenant-restaurant-api-0.0.7-2-SNAPSHOT.jar
 
 FROM ${MAVEN_BUILD_IMAGE} AS build
 
@@ -13,14 +12,13 @@ COPY lombok.config ./
 COPY src ./src
 
 RUN mvn --batch-mode --no-transfer-progress -DskipTests package
+RUN cp "$(find /app/target -maxdepth 1 -type f -name '*.jar' ! -name '*.original' | head -n1)" /app/app.jar
 
 FROM ${JAVA_RUNTIME_IMAGE}
 
-ARG APP_JAR_FILE
-
 WORKDIR /app
 
-COPY --from=build /app/target/${APP_JAR_FILE} /app/app.jar
+COPY --from=build /app/app.jar /app/app.jar
 
 EXPOSE 8080
 

@@ -47,10 +47,11 @@ Credenciais padrão do banco no ambiente Docker:
 
 Variáveis mais importantes no `.env`:
 
-- `APP_JAR_FILE`: nome do JAR gerado pelo Maven e copiado no `Dockerfile`
 - `API_PORT`: porta publicada da API no host
 - `POSTGRES_PORT`: porta publicada do PostgreSQL no host
 - `SPRING_DATASOURCE_URL`: URL JDBC usada pela aplicação no profile `docker`
+
+O `Dockerfile` resolve automaticamente o JAR empacotado pelo Maven. Isso evita quebrar o build quando a versao do `pom.xml` muda.
 
 Para derrubar o ambiente:
 
@@ -71,6 +72,28 @@ mvn verify
 ```
 
 O build falha se a cobertura JaCoCo ficar abaixo de `80%`.
+
+## Executar a collection Postman
+
+Arquivos versionados:
+
+- `postman/multitenant-restaurant-api.postman_collection.json`
+- `postman/multitenant-restaurant-api.environment.json`
+- `scripts/run-postman.sh`
+
+Para executar a collection com Newman em Docker:
+
+```bash
+./scripts/run-postman.sh
+```
+
+Se a API estiver fora do Docker ou em outra porta, informe `BASE_URL`:
+
+```bash
+BASE_URL=http://localhost:8081 ./scripts/run-postman.sh
+```
+
+O script segue o mesmo padrao operacional da collection do projeto de referencia e tenta detectar automaticamente a rede do container da API quando a stack esta de pe.
 
 ## Documentação OpenAPI
 
@@ -123,3 +146,8 @@ Todas as falhas retornam um contrato padronizado:
   "timestamp": "2026-03-22T22:00:00Z"
 }
 ```
+
+## Documentos de fechamento da fase
+
+- Checklist final: `docs/FASE2_FINAL_CHECKLIST.md`
+- Roteiro tecnico do video: `docs/ROTEIRO_TECNICO_VIDEO.md`
