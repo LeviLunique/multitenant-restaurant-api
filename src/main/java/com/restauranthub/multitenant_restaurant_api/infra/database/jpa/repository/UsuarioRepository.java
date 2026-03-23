@@ -9,4 +9,6 @@ import com.restauranthub.multitenant_restaurant_api.infra.database.jpa.entity.Us
 public interface UsuarioRepository extends JpaRepository<UsuarioEntity, Long> {
 
 	Optional<UsuarioEntity> findByEmail(String email);
+
+	java.util.List<UsuarioEntity> findAllByOrderByIdAsc();
 }

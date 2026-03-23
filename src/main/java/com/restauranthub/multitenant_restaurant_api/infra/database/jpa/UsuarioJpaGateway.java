@@ -23,6 +23,8 @@ public class UsuarioJpaGateway implements UsuarioGateway {
 	private static final String COULD_NOT_QUERY_USER_BY_ID_MESSAGE = "Could not query user by id.";
 	private static final String COULD_NOT_QUERY_USER_BY_EMAIL_MESSAGE = "Could not query user by email.";
 	private static final String COULD_NOT_LIST_USERS_MESSAGE = "Could not list users.";
+	private static final String COULD_NOT_UPDATE_USER_MESSAGE = "Could not update user.";
+	private static final String COULD_NOT_REMOVE_USER_MESSAGE = "Could not remove user.";
 
 	private final UsuarioRepository usuarioRepository;
 	private final UsuarioEntityMapper usuarioEntityMapper;
@@ -57,9 +59,27 @@ public class UsuarioJpaGateway implements UsuarioGateway {
 	@Override
 	public List<Usuario> listar() {
 		try {
-			return usuarioRepository.findAll().stream().map(usuarioEntityMapper::map).toList();
+			return usuarioRepository.findAllByOrderByIdAsc().stream().map(usuarioEntityMapper::map).toList();
 		} catch (Exception exception) {
 			throw new InfrastructureException(USER_REPOSITORY_ERROR_CODE, COULD_NOT_LIST_USERS_MESSAGE);
+		}
+	}
+
+	@Override
+	public Usuario atualizar(Usuario usuario) {
+		try {
+			return usuarioEntityMapper.map(usuarioRepository.save(usuarioEntityMapper.map(usuario)));
+		} catch (Exception exception) {
+			throw new InfrastructureException(USER_REPOSITORY_ERROR_CODE, COULD_NOT_UPDATE_USER_MESSAGE);
+		}
+	}
+
+	@Override
+	public void remover(Long id) {
+		try {
+			usuarioRepository.deleteById(id);
+		} catch (Exception exception) {
+			throw new InfrastructureException(USER_REPOSITORY_ERROR_CODE, COULD_NOT_REMOVE_USER_MESSAGE);
 		}
 	}
 }
