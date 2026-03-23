@@ -57,23 +57,23 @@ class AtualizarTipoUsuarioUsecaseImplTest {
 
 	@Test
 	void shouldRejectMissingUserTypeDuringUpdate() {
+		var tipoUsuarioAtualizado = new TipoUsuario(99L, "Cliente", TipoUsuarioEnum.CLIENTE);
 		when(tipoUsuarioGateway.obterPorId(99L)).thenReturn(Optional.empty());
 
-		var exception = assertThrows(ResourceNotFoundException.class,
-				() -> usecase.atualizar(new TipoUsuario(99L, "Cliente", TipoUsuarioEnum.CLIENTE)));
+		var exception = assertThrows(ResourceNotFoundException.class, () -> usecase.atualizar(tipoUsuarioAtualizado));
 
 		assertEquals("USER_TYPE_NOT_FOUND", exception.getCode());
 	}
 
 	@Test
 	void shouldRejectDuplicatedUserTypeNameDuringUpdate() {
+		var tipoUsuarioAtualizado = new TipoUsuario(1L, "Dono de Restaurante", TipoUsuarioEnum.DONO);
 		when(tipoUsuarioGateway.obterPorId(1L))
 				.thenReturn(Optional.of(new TipoUsuario(1L, "Cliente", TipoUsuarioEnum.CLIENTE)));
 		when(tipoUsuarioGateway.obterPorNome("Dono de Restaurante"))
 				.thenReturn(Optional.of(new TipoUsuario(2L, "Dono de Restaurante", TipoUsuarioEnum.DONO)));
 
-		var exception = assertThrows(BusinessException.class,
-				() -> usecase.atualizar(new TipoUsuario(1L, "Dono de Restaurante", TipoUsuarioEnum.DONO)));
+		var exception = assertThrows(BusinessException.class, () -> usecase.atualizar(tipoUsuarioAtualizado));
 
 		assertEquals("USER_TYPE_NAME_ALREADY_EXISTS", exception.getCode());
 		verify(tipoUsuarioGateway, Mockito.never()).atualizar(any(TipoUsuario.class));
@@ -81,14 +81,14 @@ class AtualizarTipoUsuarioUsecaseImplTest {
 
 	@Test
 	void shouldRejectDuplicatedUserTypeEnumDuringUpdate() {
+		var tipoUsuarioAtualizado = new TipoUsuario(1L, "Dono Restaurante", TipoUsuarioEnum.DONO);
 		when(tipoUsuarioGateway.obterPorId(1L))
 				.thenReturn(Optional.of(new TipoUsuario(1L, "Cliente", TipoUsuarioEnum.CLIENTE)));
 		when(tipoUsuarioGateway.obterPorNome("Dono Restaurante")).thenReturn(Optional.empty());
 		when(tipoUsuarioGateway.obterPorTipo(TipoUsuarioEnum.DONO))
 				.thenReturn(Optional.of(new TipoUsuario(2L, "Dono de Restaurante", TipoUsuarioEnum.DONO)));
 
-		var exception = assertThrows(BusinessException.class,
-				() -> usecase.atualizar(new TipoUsuario(1L, "Dono Restaurante", TipoUsuarioEnum.DONO)));
+		var exception = assertThrows(BusinessException.class, () -> usecase.atualizar(tipoUsuarioAtualizado));
 
 		assertEquals("USER_TYPE_ENUM_ALREADY_EXISTS", exception.getCode());
 		verify(tipoUsuarioGateway, Mockito.never()).atualizar(any(TipoUsuario.class));

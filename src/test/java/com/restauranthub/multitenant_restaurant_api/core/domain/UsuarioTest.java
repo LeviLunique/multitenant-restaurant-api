@@ -7,7 +7,6 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
-import com.restauranthub.multitenant_restaurant_api.core.domain.TipoUsuarioEnum;
 import com.restauranthub.multitenant_restaurant_api.core.exception.BusinessException;
 
 class UsuarioTest {
