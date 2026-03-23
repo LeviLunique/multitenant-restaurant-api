@@ -1,97 +1,122 @@
 package com.restauranthub.multitenant_restaurant_api.infra.database.jpa;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.when;
 
+import java.util.Optional;
+
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.context.annotation.Import;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.restauranthub.multitenant_restaurant_api.core.domain.TipoUsuario;
 import com.restauranthub.multitenant_restaurant_api.core.domain.TipoUsuarioEnum;
-import com.restauranthub.multitenant_restaurant_api.infra.database.mapper.TipoUsuarioEntityMapper;
+import com.restauranthub.multitenant_restaurant_api.core.exception.InfrastructureException;
 import com.restauranthub.multitenant_restaurant_api.infra.database.jpa.entity.TipoUsuarioEntity;
 import com.restauranthub.multitenant_restaurant_api.infra.database.jpa.repository.TipoUsuarioRepository;
+import com.restauranthub.multitenant_restaurant_api.infra.database.mapper.TipoUsuarioEntityMapper;
 
-@DataJpaTest
-@Import({ TipoUsuarioJpaGateway.class, TipoUsuarioEntityMapper.class })
+@ExtendWith(MockitoExtension.class)
 class TipoUsuarioJpaGatewayTest {
 
-	@Autowired
+	private static final String ERROR_CODE = "USER_TYPE_REPOSITORY_ERROR";
+
+	@Mock
+	private TipoUsuarioRepository tipoUsuarioRepository;
+
 	private TipoUsuarioJpaGateway gateway;
 
-	@Autowired
-	private TipoUsuarioRepository repository;
-
-	@Test
-	void shouldCreateUserType() {
-		var id = gateway.criar(new TipoUsuario(null, "Cliente", TipoUsuarioEnum.CLIENTE));
-
-		var savedEntity = repository.findById(id);
-
-		assertTrue(savedEntity.isPresent());
-		assertEquals("Cliente", savedEntity.get().getNome());
-		assertEquals(TipoUsuarioEnum.CLIENTE, savedEntity.get().getTipo());
+	@BeforeEach
+	void setUp() {
+		gateway = new TipoUsuarioJpaGateway(tipoUsuarioRepository, new TipoUsuarioEntityMapper());
 	}
 
 	@Test
-	void shouldFindUserTypeById() {
-		var entity = repository.save(new TipoUsuarioEntity(null, "Cliente", TipoUsuarioEnum.CLIENTE));
+	void shouldReturnEmptyWhenUserTypeIsNotFoundByEnum() {
+		when(tipoUsuarioRepository.findByTipo(TipoUsuarioEnum.CLIENTE)).thenReturn(Optional.empty());
 
-		var tipoUsuario = gateway.obterPorId(entity.getId());
+		var resultado = gateway.obterPorTipo(TipoUsuarioEnum.CLIENTE);
 
-		assertTrue(tipoUsuario.isPresent());
-		assertEquals(entity.getId(), tipoUsuario.get().getId());
+		assertTrue(resultado.isEmpty());
 	}
 
 	@Test
-	void shouldFindUserTypeByName() {
-		repository.save(new TipoUsuarioEntity(null, "Cliente", TipoUsuarioEnum.CLIENTE));
+	void shouldWrapRepositoryErrorWhenCreatingUserType() {
+		var tipoUsuario = new TipoUsuario(null, "Cliente", TipoUsuarioEnum.CLIENTE);
 
-		var tipoUsuario = gateway.obterPorNome("Cliente");
+		when(tipoUsuarioRepository.save(any(TipoUsuarioEntity.class))).thenThrow(new RuntimeException("boom"));
 
-		assertTrue(tipoUsuario.isPresent());
-		assertEquals("Cliente", tipoUsuario.get().getNome());
+		var exception = assertThrows(InfrastructureException.class, () -> gateway.criar(tipoUsuario));
+
+		assertEquals(ERROR_CODE, exception.getCode());
+		assertEquals("Could not persist user type.", exception.getMessage());
 	}
 
 	@Test
-	void shouldFindUserTypeByEnum() {
-		repository.save(new TipoUsuarioEntity(null, "Cliente", TipoUsuarioEnum.CLIENTE));
+	void shouldWrapRepositoryErrorWhenFindingUserTypeById() {
+		when(tipoUsuarioRepository.findById(1L)).thenThrow(new RuntimeException("boom"));
 
-		var tipoUsuario = gateway.obterPorTipo(TipoUsuarioEnum.CLIENTE);
+		var exception = assertThrows(InfrastructureException.class, () -> gateway.obterPorId(1L));
 
-		assertTrue(tipoUsuario.isPresent());
-		assertEquals(TipoUsuarioEnum.CLIENTE, tipoUsuario.get().getTipo());
+		assertEquals(ERROR_CODE, exception.getCode());
+		assertEquals("Could not query user type by id.", exception.getMessage());
 	}
 
 	@Test
-	void shouldListUserTypes() {
-		repository.save(new TipoUsuarioEntity(null, "Cliente", TipoUsuarioEnum.CLIENTE));
-		repository.save(new TipoUsuarioEntity(null, "Dono de Restaurante", TipoUsuarioEnum.DONO));
+	void shouldWrapRepositoryErrorWhenFindingUserTypeByName() {
+		when(tipoUsuarioRepository.findByNome("Cliente")).thenThrow(new RuntimeException("boom"));
 
-		var tiposUsuario = gateway.listar();
+		var exception = assertThrows(InfrastructureException.class, () -> gateway.obterPorNome("Cliente"));
 
-		assertEquals(2, tiposUsuario.size());
+		assertEquals(ERROR_CODE, exception.getCode());
+		assertEquals("Could not query user type by name.", exception.getMessage());
 	}
 
 	@Test
-	void shouldUpdateUserType() {
-		var entity = repository.save(new TipoUsuarioEntity(null, "Cliente", TipoUsuarioEnum.CLIENTE));
+	void shouldWrapRepositoryErrorWhenFindingUserTypeByEnum() {
+		when(tipoUsuarioRepository.findByTipo(TipoUsuarioEnum.CLIENTE)).thenThrow(new RuntimeException("boom"));
 
-		var tipoUsuario = gateway.atualizar(new TipoUsuario(entity.getId(), "Dono de Restaurante", TipoUsuarioEnum.DONO));
+		var exception = assertThrows(InfrastructureException.class, () -> gateway.obterPorTipo(TipoUsuarioEnum.CLIENTE));
 
-		assertEquals(entity.getId(), tipoUsuario.getId());
-		assertEquals("Dono de Restaurante", repository.findById(entity.getId()).orElseThrow().getNome());
-		assertEquals(TipoUsuarioEnum.DONO, repository.findById(entity.getId()).orElseThrow().getTipo());
+		assertEquals(ERROR_CODE, exception.getCode());
+		assertEquals("Could not query user type by enum.", exception.getMessage());
 	}
 
 	@Test
-	void shouldRemoveUserType() {
-		var entity = repository.save(new TipoUsuarioEntity(null, "Cliente", TipoUsuarioEnum.CLIENTE));
+	void shouldWrapRepositoryErrorWhenListingUserTypes() {
+		when(tipoUsuarioRepository.findAllByOrderByIdAsc()).thenThrow(new RuntimeException("boom"));
 
-		gateway.remover(entity.getId());
+		var exception = assertThrows(InfrastructureException.class, gateway::listar);
 
-		assertTrue(repository.findById(entity.getId()).isEmpty());
+		assertEquals(ERROR_CODE, exception.getCode());
+		assertEquals("Could not list user types.", exception.getMessage());
+	}
+
+	@Test
+	void shouldWrapRepositoryErrorWhenUpdatingUserType() {
+		var tipoUsuario = new TipoUsuario(1L, "Cliente", TipoUsuarioEnum.CLIENTE);
+
+		when(tipoUsuarioRepository.save(any(TipoUsuarioEntity.class))).thenThrow(new RuntimeException("boom"));
+
+		var exception = assertThrows(InfrastructureException.class, () -> gateway.atualizar(tipoUsuario));
+
+		assertEquals(ERROR_CODE, exception.getCode());
+		assertEquals("Could not update user type.", exception.getMessage());
+	}
+
+	@Test
+	void shouldWrapRepositoryErrorWhenRemovingUserType() {
+		doThrow(new RuntimeException("boom")).when(tipoUsuarioRepository).deleteById(1L);
+
+		var exception = assertThrows(InfrastructureException.class, () -> gateway.remover(1L));
+
+		assertEquals(ERROR_CODE, exception.getCode());
+		assertEquals("Could not remove user type.", exception.getMessage());
 	}
 }
