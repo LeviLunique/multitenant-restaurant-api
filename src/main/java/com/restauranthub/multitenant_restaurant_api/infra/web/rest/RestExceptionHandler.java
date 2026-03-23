@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import com.restauranthub.multitenant_restaurant_api.core.exception.BusinessException;
 import com.restauranthub.multitenant_restaurant_api.core.exception.InfrastructureException;
@@ -34,6 +35,11 @@ public class RestExceptionHandler {
 	@ExceptionHandler(MethodArgumentNotValidException.class)
 	public ResponseEntity<ApiErrorJson> handleValidationException(MethodArgumentNotValidException exception) {
 		return buildResponse(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", "Request validation failed.");
+	}
+
+	@ExceptionHandler(NoResourceFoundException.class)
+	public ResponseEntity<ApiErrorJson> handleNoResourceFoundException(NoResourceFoundException exception) {
+		return buildResponse(HttpStatus.NOT_FOUND, "RESOURCE_NOT_FOUND", "Resource not found.");
 	}
 
 	@ExceptionHandler(Exception.class)
