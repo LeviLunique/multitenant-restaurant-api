@@ -4,8 +4,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import com.restauranthub.multitenant_restaurant_api.core.exception.BusinessException;
 import com.restauranthub.multitenant_restaurant_api.core.exception.InfrastructureException;
@@ -64,5 +66,15 @@ class RestExceptionHandlerTest {
 		assertNotNull(response.getBody());
 		assertEquals("UNEXPECTED_ERROR", response.getBody().code());
 		assertEquals("Unexpected application error.", response.getBody().message());
+	}
+
+	@Test
+	void shouldTranslateNoResourceFoundException() {
+		var response = handler.handleNoResourceFoundException(new NoResourceFoundException(HttpMethod.GET, "/missing"));
+
+		assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+		assertNotNull(response.getBody());
+		assertEquals("RESOURCE_NOT_FOUND", response.getBody().code());
+		assertEquals("Resource not found.", response.getBody().message());
 	}
 }
