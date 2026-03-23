@@ -1,94 +1,123 @@
 package com.restauranthub.multitenant_restaurant_api.infra.database.jpa;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.when;
 
+import java.util.Optional;
+
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.context.annotation.Import;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.restauranthub.multitenant_restaurant_api.core.domain.TipoUsuario;
-import com.restauranthub.multitenant_restaurant_api.core.domain.TipoUsuarioEnum;
 import com.restauranthub.multitenant_restaurant_api.core.domain.Usuario;
-import com.restauranthub.multitenant_restaurant_api.infra.database.jpa.entity.TipoUsuarioEntity;
-import com.restauranthub.multitenant_restaurant_api.infra.database.mapper.UsuarioEntityMapper;
+import com.restauranthub.multitenant_restaurant_api.core.exception.InfrastructureException;
 import com.restauranthub.multitenant_restaurant_api.infra.database.jpa.entity.UsuarioEntity;
-import com.restauranthub.multitenant_restaurant_api.infra.database.jpa.repository.TipoUsuarioRepository;
 import com.restauranthub.multitenant_restaurant_api.infra.database.jpa.repository.UsuarioRepository;
+import com.restauranthub.multitenant_restaurant_api.infra.database.mapper.UsuarioEntityMapper;
 
-@DataJpaTest
-@Import({ UsuarioJpaGateway.class, UsuarioEntityMapper.class })
+@ExtendWith(MockitoExtension.class)
 class UsuarioJpaGatewayTest {
 
-	@Autowired
+	private static final String ERROR_CODE = "USER_REPOSITORY_ERROR";
+
+	@Mock
+	private UsuarioRepository usuarioRepository;
+
 	private UsuarioJpaGateway gateway;
 
-	@Autowired
-	private UsuarioRepository repository;
-
-	@Autowired
-	private TipoUsuarioRepository tipoUsuarioRepository;
-
-	@Test
-	void shouldCreateUser() {
-		var id = gateway.criar(new Usuario(null, "Levi Lunique", "levi@example.com"));
-
-		var savedEntity = repository.findById(id);
-
-		assertTrue(savedEntity.isPresent());
-		assertEquals("Levi Lunique", savedEntity.get().getNome());
+	@BeforeEach
+	void setUp() {
+		gateway = new UsuarioJpaGateway(usuarioRepository, new UsuarioEntityMapper());
 	}
 
 	@Test
-	void shouldFindUserById() {
-		var entity = repository.save(new UsuarioEntity(null, "Levi Lunique", "levi@example.com"));
+	void shouldNormalizeEmailWhenQueryingUserByEmail() {
+		var usuarioEntity = new UsuarioEntity(1L, "Levi", "levi@example.com");
 
-		var usuario = gateway.obterPorId(entity.getId());
+		when(usuarioRepository.findByEmail("levi@example.com")).thenReturn(Optional.of(usuarioEntity));
 
-		assertTrue(usuario.isPresent());
-		assertEquals(entity.getId(), usuario.get().getId());
+		var resultado = gateway.obterPorEmail("LeVi@Example.Com");
+
+		assertTrue(resultado.isPresent());
+		assertEquals("levi@example.com", resultado.get().getEmail());
 	}
 
 	@Test
-	void shouldFindUserByEmail() {
-		repository.save(new UsuarioEntity(null, "Levi Lunique", "levi@example.com"));
+	void shouldReturnEmptyWhenUserIsNotFoundById() {
+		when(usuarioRepository.findById(99L)).thenReturn(Optional.empty());
 
-		var usuario = gateway.obterPorEmail("levi@example.com");
+		var resultado = gateway.obterPorId(99L);
 
-		assertTrue(usuario.isPresent());
-		assertEquals("levi@example.com", usuario.get().getEmail());
+		assertTrue(resultado.isEmpty());
 	}
 
 	@Test
-	void shouldListUsers() {
-		repository.save(new UsuarioEntity(null, "Levi Lunique", "levi@example.com"));
-		repository.save(new UsuarioEntity(null, "Maria Silva", "maria@example.com"));
+	void shouldWrapRepositoryErrorWhenCreatingUser() {
+		var usuario = new Usuario(null, "Levi", "levi@example.com");
 
-		var usuarios = gateway.listar();
+		when(usuarioRepository.save(any(UsuarioEntity.class))).thenThrow(new RuntimeException("boom"));
 
-		assertEquals(2, usuarios.size());
+		var exception = assertThrows(InfrastructureException.class, () -> gateway.criar(usuario));
+
+		assertEquals(ERROR_CODE, exception.getCode());
+		assertEquals("Could not persist user.", exception.getMessage());
 	}
 
 	@Test
-	void shouldUpdateUserWithAssociatedTypes() {
-		var tipoUsuarioEntity = tipoUsuarioRepository.save(new TipoUsuarioEntity(null, "Cliente", TipoUsuarioEnum.CLIENTE));
-		var usuarioEntity = repository.save(new UsuarioEntity(null, "Levi Lunique", "levi@example.com"));
-		var usuario = new Usuario(usuarioEntity.getId(), "Levi Lunique", "levi@example.com");
-		usuario.associarTipoUsuario(new TipoUsuario(tipoUsuarioEntity.getId(), "Cliente", TipoUsuarioEnum.CLIENTE));
+	void shouldWrapRepositoryErrorWhenFindingUserById() {
+		when(usuarioRepository.findById(1L)).thenThrow(new RuntimeException("boom"));
 
-		var usuarioAtualizado = gateway.atualizar(usuario);
+		var exception = assertThrows(InfrastructureException.class, () -> gateway.obterPorId(1L));
 
-		assertEquals(1, usuarioAtualizado.getTiposUsuario().size());
-		assertEquals(1, repository.findById(usuarioEntity.getId()).orElseThrow().getTiposUsuario().size());
+		assertEquals(ERROR_CODE, exception.getCode());
+		assertEquals("Could not query user by id.", exception.getMessage());
 	}
 
 	@Test
-	void shouldRemoveUser() {
-		var entity = repository.save(new UsuarioEntity(null, "Levi Lunique", "levi@example.com"));
+	void shouldWrapRepositoryErrorWhenFindingUserByEmail() {
+		when(usuarioRepository.findByEmail("levi@example.com")).thenThrow(new RuntimeException("boom"));
 
-		gateway.remover(entity.getId());
+		var exception = assertThrows(InfrastructureException.class, () -> gateway.obterPorEmail("levi@example.com"));
 
-		assertTrue(repository.findById(entity.getId()).isEmpty());
+		assertEquals(ERROR_CODE, exception.getCode());
+		assertEquals("Could not query user by email.", exception.getMessage());
+	}
+
+	@Test
+	void shouldWrapRepositoryErrorWhenListingUsers() {
+		when(usuarioRepository.findAllByOrderByIdAsc()).thenThrow(new RuntimeException("boom"));
+
+		var exception = assertThrows(InfrastructureException.class, gateway::listar);
+
+		assertEquals(ERROR_CODE, exception.getCode());
+		assertEquals("Could not list users.", exception.getMessage());
+	}
+
+	@Test
+	void shouldWrapRepositoryErrorWhenUpdatingUser() {
+		var usuario = new Usuario(1L, "Levi", "levi@example.com");
+
+		when(usuarioRepository.save(any(UsuarioEntity.class))).thenThrow(new RuntimeException("boom"));
+
+		var exception = assertThrows(InfrastructureException.class, () -> gateway.atualizar(usuario));
+
+		assertEquals(ERROR_CODE, exception.getCode());
+		assertEquals("Could not update user.", exception.getMessage());
+	}
+
+	@Test
+	void shouldWrapRepositoryErrorWhenRemovingUser() {
+		doThrow(new RuntimeException("boom")).when(usuarioRepository).deleteById(1L);
+
+		var exception = assertThrows(InfrastructureException.class, () -> gateway.remover(1L));
+
+		assertEquals(ERROR_CODE, exception.getCode());
+		assertEquals("Could not remove user.", exception.getMessage());
 	}
 }
