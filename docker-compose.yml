@@ -24,7 +24,6 @@ services:
       args:
         MAVEN_BUILD_IMAGE: ${MAVEN_BUILD_IMAGE}
         JAVA_RUNTIME_IMAGE: ${JAVA_RUNTIME_IMAGE}
-        APP_JAR_FILE: ${APP_JAR_FILE}
     container_name: ${API_CONTAINER_NAME}
     depends_on:
       postgres:

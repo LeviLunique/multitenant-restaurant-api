@@ -38,3 +38,4 @@ build/
 
 # Local requirements directory
 /requirements/
+/docs/
