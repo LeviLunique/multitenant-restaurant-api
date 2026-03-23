@@ -8,9 +8,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
 
+import com.restauranthub.multitenant_restaurant_api.core.domain.TipoUsuario;
+import com.restauranthub.multitenant_restaurant_api.core.domain.TipoUsuarioEnum;
 import com.restauranthub.multitenant_restaurant_api.core.domain.Usuario;
+import com.restauranthub.multitenant_restaurant_api.infra.database.jpa.entity.TipoUsuarioEntity;
 import com.restauranthub.multitenant_restaurant_api.infra.database.mapper.UsuarioEntityMapper;
 import com.restauranthub.multitenant_restaurant_api.infra.database.jpa.entity.UsuarioEntity;
+import com.restauranthub.multitenant_restaurant_api.infra.database.jpa.repository.TipoUsuarioRepository;
 import com.restauranthub.multitenant_restaurant_api.infra.database.jpa.repository.UsuarioRepository;
 
 @DataJpaTest
@@ -22,6 +26,9 @@ class UsuarioJpaGatewayTest {
 
 	@Autowired
 	private UsuarioRepository repository;
+
+	@Autowired
+	private TipoUsuarioRepository tipoUsuarioRepository;
 
 	@Test
 	void shouldCreateUser() {
@@ -61,5 +68,27 @@ class UsuarioJpaGatewayTest {
 		var usuarios = gateway.listar();
 
 		assertEquals(2, usuarios.size());
+	}
+
+	@Test
+	void shouldUpdateUserWithAssociatedTypes() {
+		var tipoUsuarioEntity = tipoUsuarioRepository.save(new TipoUsuarioEntity(null, "Cliente", TipoUsuarioEnum.CLIENTE));
+		var usuarioEntity = repository.save(new UsuarioEntity(null, "Levi Lunique", "levi@example.com"));
+		var usuario = new Usuario(usuarioEntity.getId(), "Levi Lunique", "levi@example.com");
+		usuario.associarTipoUsuario(new TipoUsuario(tipoUsuarioEntity.getId(), "Cliente", TipoUsuarioEnum.CLIENTE));
+
+		var usuarioAtualizado = gateway.atualizar(usuario);
+
+		assertEquals(1, usuarioAtualizado.getTiposUsuario().size());
+		assertEquals(1, repository.findById(usuarioEntity.getId()).orElseThrow().getTiposUsuario().size());
+	}
+
+	@Test
+	void shouldRemoveUser() {
+		var entity = repository.save(new UsuarioEntity(null, "Levi Lunique", "levi@example.com"));
+
+		gateway.remover(entity.getId());
+
+		assertTrue(repository.findById(entity.getId()).isEmpty());
 	}
 }

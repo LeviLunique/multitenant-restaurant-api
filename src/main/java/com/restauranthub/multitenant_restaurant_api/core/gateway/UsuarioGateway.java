@@ -14,4 +14,8 @@ public interface UsuarioGateway {
 	Optional<Usuario> obterPorEmail(String email);
 
 	List<Usuario> listar();
+
+	Usuario atualizar(Usuario usuario);
+
+	void remover(Long id);
 }

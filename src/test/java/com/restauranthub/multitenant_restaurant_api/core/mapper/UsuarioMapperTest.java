@@ -6,6 +6,8 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
+import com.restauranthub.multitenant_restaurant_api.core.domain.TipoUsuario;
+import com.restauranthub.multitenant_restaurant_api.core.domain.TipoUsuarioEnum;
 import com.restauranthub.multitenant_restaurant_api.core.domain.Usuario;
 import com.restauranthub.multitenant_restaurant_api.core.dto.CriarUsuarioInputDto;
 
@@ -26,12 +28,16 @@ class UsuarioMapperTest {
 	@Test
 	void shouldMapDomainToOutputDto() {
 		var usuario = new Usuario(1L, "Levi Lunique", "levi@example.com");
+		usuario.associarTipoUsuario(new TipoUsuario(2L, "Cliente", TipoUsuarioEnum.CLIENTE));
 
 		var dto = mapper.map(usuario);
 
 		assertEquals(1L, dto.id());
 		assertEquals("Levi Lunique", dto.nome());
 		assertEquals("levi@example.com", dto.email());
+		assertEquals(1, dto.tiposUsuario().size());
+		assertEquals("Cliente", dto.tiposUsuario().get(0).nome());
+		assertEquals(TipoUsuarioEnum.CLIENTE, dto.tiposUsuario().get(0).tipo());
 	}
 
 	@Test
