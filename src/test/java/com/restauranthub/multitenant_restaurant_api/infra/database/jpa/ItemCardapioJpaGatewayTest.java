@@ -1,101 +1,104 @@
 package com.restauranthub.multitenant_restaurant_api.infra.database.jpa;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
+import java.util.Optional;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.context.annotation.Import;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.restauranthub.multitenant_restaurant_api.core.domain.ItemCardapio;
+import com.restauranthub.multitenant_restaurant_api.core.exception.InfrastructureException;
 import com.restauranthub.multitenant_restaurant_api.infra.database.jpa.entity.ItemCardapioEntity;
-import com.restauranthub.multitenant_restaurant_api.infra.database.jpa.entity.RestauranteEntity;
-import com.restauranthub.multitenant_restaurant_api.infra.database.jpa.entity.UsuarioEntity;
 import com.restauranthub.multitenant_restaurant_api.infra.database.jpa.repository.ItemCardapioRepository;
-import com.restauranthub.multitenant_restaurant_api.infra.database.jpa.repository.RestauranteRepository;
-import com.restauranthub.multitenant_restaurant_api.infra.database.jpa.repository.UsuarioRepository;
 import com.restauranthub.multitenant_restaurant_api.infra.database.mapper.ItemCardapioEntityMapper;
 
-@DataJpaTest
-@Import({ ItemCardapioJpaGateway.class, ItemCardapioEntityMapper.class })
+@ExtendWith(MockitoExtension.class)
 class ItemCardapioJpaGatewayTest {
 
-	@Autowired
-	private ItemCardapioJpaGateway gateway;
+	private static final String ERROR_CODE = "MENU_ITEM_REPOSITORY_ERROR";
 
-	@Autowired
+	@Mock
 	private ItemCardapioRepository itemCardapioRepository;
 
-	@Autowired
-	private RestauranteRepository restauranteRepository;
+	private ItemCardapioJpaGateway gateway;
 
-	@Autowired
-	private UsuarioRepository usuarioRepository;
-
-	@Test
-	void shouldCreateMenuItem() {
-		var restaurante = criarRestaurante("Bistro");
-
-		var id = gateway.criar(new ItemCardapio(null, restaurante.getId(), "Risoto", "Descricao", new BigDecimal("49.90"), true, "/foto.jpg"));
-
-		var savedEntity = itemCardapioRepository.findById(id);
-
-		assertTrue(savedEntity.isPresent());
-		assertEquals("Risoto", savedEntity.get().getNome());
+	@BeforeEach
+	void setUp() {
+		gateway = new ItemCardapioJpaGateway(itemCardapioRepository, new ItemCardapioEntityMapper());
 	}
 
 	@Test
-	void shouldFindMenuItemByIdAndRestaurant() {
-		var restaurante = criarRestaurante("Bistro");
-		var entity = itemCardapioRepository.save(
-				new ItemCardapioEntity(null, "Risoto", "Descricao", new BigDecimal("49.90"), true, "/foto.jpg", restaurante));
+	void shouldNotDeleteMenuItemWhenRestaurantScopedItemIsMissing() {
+		when(itemCardapioRepository.findByIdAndRestauranteId(2L, 1L)).thenReturn(Optional.empty());
 
-		var itemCardapio = gateway.obterPorId(restaurante.getId(), entity.getId());
+		gateway.remover(1L, 2L);
 
-		assertTrue(itemCardapio.isPresent());
-		assertEquals(entity.getId(), itemCardapio.get().getId());
+		verify(itemCardapioRepository, never()).delete(any(ItemCardapioEntity.class));
 	}
 
 	@Test
-	void shouldListMenuItemsByRestaurant() {
-		var restaurante = criarRestaurante("Bistro");
-		itemCardapioRepository.save(new ItemCardapioEntity(null, "Risoto", "Descricao 1", new BigDecimal("49.90"), true, "/foto-1.jpg", restaurante));
-		itemCardapioRepository.save(new ItemCardapioEntity(null, "Massa", "Descricao 2", new BigDecimal("39.90"), false, "/foto-2.jpg", restaurante));
+	void shouldWrapRepositoryErrorWhenCreatingMenuItem() {
+		var item = new ItemCardapio(null, 1L, "Risoto", "Descricao", new BigDecimal("49.90"), true, "/foto.jpg");
 
-		var itens = gateway.listarPorRestaurante(restaurante.getId());
+		when(itemCardapioRepository.save(any(ItemCardapioEntity.class))).thenThrow(new RuntimeException("boom"));
 
-		assertEquals(2, itens.size());
+		var exception = assertThrows(InfrastructureException.class, () -> gateway.criar(item));
+
+		assertEquals(ERROR_CODE, exception.getCode());
+		assertEquals("Could not persist menu item.", exception.getMessage());
 	}
 
 	@Test
-	void shouldUpdateMenuItem() {
-		var restaurante = criarRestaurante("Bistro");
-		var entity = itemCardapioRepository.save(
-				new ItemCardapioEntity(null, "Risoto", "Descricao", new BigDecimal("49.90"), true, "/foto.jpg", restaurante));
+	void shouldWrapRepositoryErrorWhenFindingMenuItem() {
+		when(itemCardapioRepository.findByIdAndRestauranteId(2L, 1L)).thenThrow(new RuntimeException("boom"));
 
-		var itemCardapio = gateway.atualizar(
-				new ItemCardapio(entity.getId(), restaurante.getId(), "Risoto Atualizado", "Descricao nova", new BigDecimal("54.90"), false, "/foto-nova.jpg"));
+		var exception = assertThrows(InfrastructureException.class, () -> gateway.obterPorId(1L, 2L));
 
-		assertEquals(entity.getId(), itemCardapio.getId());
-		assertEquals("Risoto Atualizado", itemCardapioRepository.findById(entity.getId()).orElseThrow().getNome());
+		assertEquals(ERROR_CODE, exception.getCode());
+		assertEquals("Could not query menu item.", exception.getMessage());
 	}
 
 	@Test
-	void shouldRemoveMenuItem() {
-		var restaurante = criarRestaurante("Bistro");
-		var entity = itemCardapioRepository.save(
-				new ItemCardapioEntity(null, "Risoto", "Descricao", new BigDecimal("49.90"), true, "/foto.jpg", restaurante));
+	void shouldWrapRepositoryErrorWhenListingMenuItems() {
+		when(itemCardapioRepository.findAllByRestauranteIdOrderByIdAsc(1L)).thenThrow(new RuntimeException("boom"));
 
-		gateway.remover(restaurante.getId(), entity.getId());
+		var exception = assertThrows(InfrastructureException.class, () -> gateway.listarPorRestaurante(1L));
 
-		assertTrue(itemCardapioRepository.findById(entity.getId()).isEmpty());
+		assertEquals(ERROR_CODE, exception.getCode());
+		assertEquals("Could not list menu items.", exception.getMessage());
 	}
 
-	private RestauranteEntity criarRestaurante(String nome) {
-		var dono = usuarioRepository.save(new UsuarioEntity(null, "Dono", "dono@example.com"));
-		return restauranteRepository.save(new RestauranteEntity(null, nome, "Rua A, 100", "Francesa", "09:00-22:00", dono));
+	@Test
+	void shouldWrapRepositoryErrorWhenUpdatingMenuItem() {
+		var item = new ItemCardapio(2L, 1L, "Risoto", "Descricao", new BigDecimal("49.90"), true, "/foto.jpg");
+
+		when(itemCardapioRepository.save(any(ItemCardapioEntity.class))).thenThrow(new RuntimeException("boom"));
+
+		var exception = assertThrows(InfrastructureException.class, () -> gateway.atualizar(item));
+
+		assertEquals(ERROR_CODE, exception.getCode());
+		assertEquals("Could not update menu item.", exception.getMessage());
+	}
+
+	@Test
+	void shouldWrapRepositoryErrorWhenRemovingMenuItem() {
+		when(itemCardapioRepository.findByIdAndRestauranteId(2L, 1L)).thenThrow(new RuntimeException("boom"));
+
+		var exception = assertThrows(InfrastructureException.class, () -> gateway.remover(1L, 2L));
+
+		assertEquals(ERROR_CODE, exception.getCode());
+		assertEquals("Could not remove menu item.", exception.getMessage());
 	}
 }

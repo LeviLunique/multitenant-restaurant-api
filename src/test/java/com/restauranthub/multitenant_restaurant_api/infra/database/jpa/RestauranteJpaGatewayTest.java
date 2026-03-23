@@ -1,87 +1,101 @@
 package com.restauranthub.multitenant_restaurant_api.infra.database.jpa;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.when;
 
+import java.util.Optional;
+
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.context.annotation.Import;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.restauranthub.multitenant_restaurant_api.core.domain.Restaurante;
+import com.restauranthub.multitenant_restaurant_api.core.exception.InfrastructureException;
 import com.restauranthub.multitenant_restaurant_api.infra.database.jpa.entity.RestauranteEntity;
-import com.restauranthub.multitenant_restaurant_api.infra.database.jpa.entity.UsuarioEntity;
 import com.restauranthub.multitenant_restaurant_api.infra.database.jpa.repository.RestauranteRepository;
-import com.restauranthub.multitenant_restaurant_api.infra.database.jpa.repository.UsuarioRepository;
 import com.restauranthub.multitenant_restaurant_api.infra.database.mapper.RestauranteEntityMapper;
 
-@DataJpaTest
-@Import({ RestauranteJpaGateway.class, RestauranteEntityMapper.class })
+@ExtendWith(MockitoExtension.class)
 class RestauranteJpaGatewayTest {
 
-	@Autowired
-	private RestauranteJpaGateway gateway;
+	private static final String ERROR_CODE = "RESTAURANT_REPOSITORY_ERROR";
 
-	@Autowired
+	@Mock
 	private RestauranteRepository restauranteRepository;
 
-	@Autowired
-	private UsuarioRepository usuarioRepository;
+	private RestauranteJpaGateway gateway;
 
-	@Test
-	void shouldCreateRestaurant() {
-		var dono = usuarioRepository.save(new UsuarioEntity(null, "Dono", "dono@example.com"));
-
-		var id = gateway.criar(new Restaurante(null, "Bistrô Central", "Rua A, 100", "Francesa", "09:00-22:00", dono.getId()));
-
-		var savedEntity = restauranteRepository.findById(id);
-
-		assertTrue(savedEntity.isPresent());
-		assertEquals("Bistrô Central", savedEntity.get().getNome());
+	@BeforeEach
+	void setUp() {
+		gateway = new RestauranteJpaGateway(restauranteRepository, new RestauranteEntityMapper());
 	}
 
 	@Test
-	void shouldFindRestaurantById() {
-		var dono = usuarioRepository.save(new UsuarioEntity(null, "Dono", "dono@example.com"));
-		var entity = restauranteRepository.save(new RestauranteEntity(null, "Bistrô Central", "Rua A, 100", "Francesa", "09:00-22:00", dono));
+	void shouldReturnEmptyWhenRestaurantIsNotFoundById() {
+		when(restauranteRepository.findById(99L)).thenReturn(Optional.empty());
 
-		var restaurante = gateway.obterPorId(entity.getId());
+		var resultado = gateway.obterPorId(99L);
 
-		assertTrue(restaurante.isPresent());
-		assertEquals(entity.getId(), restaurante.get().getId());
+		assertTrue(resultado.isEmpty());
 	}
 
 	@Test
-	void shouldListRestaurants() {
-		var donoA = usuarioRepository.save(new UsuarioEntity(null, "Dono A", "dono.a@example.com"));
-		var donoB = usuarioRepository.save(new UsuarioEntity(null, "Dono B", "dono.b@example.com"));
-		restauranteRepository.save(new RestauranteEntity(null, "Bistrô Central", "Rua A, 100", "Francesa", "09:00-22:00", donoA));
-		restauranteRepository.save(new RestauranteEntity(null, "Cantina Sul", "Rua B, 200", "Italiana", "10:00-23:00", donoB));
+	void shouldWrapRepositoryErrorWhenCreatingRestaurant() {
+		var restaurante = new Restaurante(null, "Bistro", "Rua A", "Francesa", "09:00-18:00", 1L);
 
-		var restaurantes = gateway.listar();
+		when(restauranteRepository.save(any(RestauranteEntity.class))).thenThrow(new RuntimeException("boom"));
 
-		assertEquals(2, restaurantes.size());
+		var exception = assertThrows(InfrastructureException.class, () -> gateway.criar(restaurante));
+
+		assertEquals(ERROR_CODE, exception.getCode());
+		assertEquals("Could not persist restaurant.", exception.getMessage());
 	}
 
 	@Test
-	void shouldUpdateRestaurant() {
-		var donoA = usuarioRepository.save(new UsuarioEntity(null, "Dono A", "dono.a@example.com"));
-		var donoB = usuarioRepository.save(new UsuarioEntity(null, "Dono B", "dono.b@example.com"));
-		var entity = restauranteRepository.save(new RestauranteEntity(null, "Bistrô Central", "Rua A, 100", "Francesa", "09:00-22:00", donoA));
+	void shouldWrapRepositoryErrorWhenFindingRestaurantById() {
+		when(restauranteRepository.findById(1L)).thenThrow(new RuntimeException("boom"));
 
-		var restaurante = gateway.atualizar(new Restaurante(entity.getId(), "Bistrô Atualizado", "Rua B, 200", "Italiana", "10:00-23:00", donoB.getId()));
+		var exception = assertThrows(InfrastructureException.class, () -> gateway.obterPorId(1L));
 
-		assertEquals(entity.getId(), restaurante.getId());
-		assertEquals("Bistrô Atualizado", restauranteRepository.findById(entity.getId()).orElseThrow().getNome());
+		assertEquals(ERROR_CODE, exception.getCode());
+		assertEquals("Could not query restaurant by id.", exception.getMessage());
 	}
 
 	@Test
-	void shouldRemoveRestaurant() {
-		var dono = usuarioRepository.save(new UsuarioEntity(null, "Dono", "dono@example.com"));
-		var entity = restauranteRepository.save(new RestauranteEntity(null, "Bistrô Central", "Rua A, 100", "Francesa", "09:00-22:00", dono));
+	void shouldWrapRepositoryErrorWhenListingRestaurants() {
+		when(restauranteRepository.findAllByOrderByIdAsc()).thenThrow(new RuntimeException("boom"));
 
-		gateway.remover(entity.getId());
+		var exception = assertThrows(InfrastructureException.class, gateway::listar);
 
-		assertTrue(restauranteRepository.findById(entity.getId()).isEmpty());
+		assertEquals(ERROR_CODE, exception.getCode());
+		assertEquals("Could not list restaurants.", exception.getMessage());
+	}
+
+	@Test
+	void shouldWrapRepositoryErrorWhenUpdatingRestaurant() {
+		var restaurante = new Restaurante(1L, "Bistro", "Rua A", "Francesa", "09:00-18:00", 1L);
+
+		when(restauranteRepository.save(any(RestauranteEntity.class))).thenThrow(new RuntimeException("boom"));
+
+		var exception = assertThrows(InfrastructureException.class, () -> gateway.atualizar(restaurante));
+
+		assertEquals(ERROR_CODE, exception.getCode());
+		assertEquals("Could not update restaurant.", exception.getMessage());
+	}
+
+	@Test
+	void shouldWrapRepositoryErrorWhenRemovingRestaurant() {
+		doThrow(new RuntimeException("boom")).when(restauranteRepository).deleteById(1L);
+
+		var exception = assertThrows(InfrastructureException.class, () -> gateway.remover(1L));
+
+		assertEquals(ERROR_CODE, exception.getCode());
+		assertEquals("Could not remove restaurant.", exception.getMessage());
 	}
 }
