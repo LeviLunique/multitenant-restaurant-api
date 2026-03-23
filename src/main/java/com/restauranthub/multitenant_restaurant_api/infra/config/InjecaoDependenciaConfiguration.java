@@ -4,14 +4,19 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import com.restauranthub.multitenant_restaurant_api.core.controller.TipoUsuarioController;
+import com.restauranthub.multitenant_restaurant_api.core.controller.ItemCardapioController;
 import com.restauranthub.multitenant_restaurant_api.core.controller.RestauranteController;
 import com.restauranthub.multitenant_restaurant_api.core.controller.UsuarioController;
+import com.restauranthub.multitenant_restaurant_api.core.gateway.ItemCardapioGateway;
 import com.restauranthub.multitenant_restaurant_api.core.gateway.RestauranteGateway;
 import com.restauranthub.multitenant_restaurant_api.core.gateway.TipoUsuarioGateway;
 import com.restauranthub.multitenant_restaurant_api.core.gateway.UsuarioGateway;
+import com.restauranthub.multitenant_restaurant_api.core.mapper.ItemCardapioMapper;
 import com.restauranthub.multitenant_restaurant_api.core.mapper.RestauranteMapper;
 import com.restauranthub.multitenant_restaurant_api.core.mapper.TipoUsuarioMapper;
 import com.restauranthub.multitenant_restaurant_api.core.mapper.UsuarioMapper;
+import com.restauranthub.multitenant_restaurant_api.core.usecase.AtualizarItemCardapioUsecase;
+import com.restauranthub.multitenant_restaurant_api.core.usecase.AtualizarItemCardapioUsecaseImpl;
 import com.restauranthub.multitenant_restaurant_api.core.usecase.AtualizarRestauranteUsecase;
 import com.restauranthub.multitenant_restaurant_api.core.usecase.AtualizarRestauranteUsecaseImpl;
 import com.restauranthub.multitenant_restaurant_api.core.usecase.AssociarTipoUsuarioAoUsuarioUsecase;
@@ -20,24 +25,32 @@ import com.restauranthub.multitenant_restaurant_api.core.usecase.AtualizarTipoUs
 import com.restauranthub.multitenant_restaurant_api.core.usecase.AtualizarTipoUsuarioUsecaseImpl;
 import com.restauranthub.multitenant_restaurant_api.core.usecase.AtualizarUsuarioUsecase;
 import com.restauranthub.multitenant_restaurant_api.core.usecase.AtualizarUsuarioUsecaseImpl;
+import com.restauranthub.multitenant_restaurant_api.core.usecase.BuscarItemCardapioPorIdUsecase;
+import com.restauranthub.multitenant_restaurant_api.core.usecase.BuscarItemCardapioPorIdUsecaseImpl;
 import com.restauranthub.multitenant_restaurant_api.core.usecase.BuscarRestaurantePorIdUsecase;
 import com.restauranthub.multitenant_restaurant_api.core.usecase.BuscarRestaurantePorIdUsecaseImpl;
 import com.restauranthub.multitenant_restaurant_api.core.usecase.BuscarTipoUsuarioPorIdUsecase;
 import com.restauranthub.multitenant_restaurant_api.core.usecase.BuscarTipoUsuarioPorIdUsecaseImpl;
 import com.restauranthub.multitenant_restaurant_api.core.usecase.BuscarUsuarioPorIdUsecase;
 import com.restauranthub.multitenant_restaurant_api.core.usecase.BuscarUsuarioPorIdUsecaseImpl;
+import com.restauranthub.multitenant_restaurant_api.core.usecase.CriarItemCardapioUsecase;
+import com.restauranthub.multitenant_restaurant_api.core.usecase.CriarItemCardapioUsecaseImpl;
 import com.restauranthub.multitenant_restaurant_api.core.usecase.CriarRestauranteUsecase;
 import com.restauranthub.multitenant_restaurant_api.core.usecase.CriarRestauranteUsecaseImpl;
 import com.restauranthub.multitenant_restaurant_api.core.usecase.CriarTipoUsuarioUsecase;
 import com.restauranthub.multitenant_restaurant_api.core.usecase.CriarTipoUsuarioUsecaseImpl;
 import com.restauranthub.multitenant_restaurant_api.core.usecase.CriarUsuarioUsecase;
 import com.restauranthub.multitenant_restaurant_api.core.usecase.CriarUsuarioUsecaseImpl;
+import com.restauranthub.multitenant_restaurant_api.core.usecase.ListarItensCardapioPorRestauranteUsecase;
+import com.restauranthub.multitenant_restaurant_api.core.usecase.ListarItensCardapioPorRestauranteUsecaseImpl;
 import com.restauranthub.multitenant_restaurant_api.core.usecase.ListarRestaurantesUsecase;
 import com.restauranthub.multitenant_restaurant_api.core.usecase.ListarRestaurantesUsecaseImpl;
 import com.restauranthub.multitenant_restaurant_api.core.usecase.ListarTiposUsuarioUsecase;
 import com.restauranthub.multitenant_restaurant_api.core.usecase.ListarTiposUsuarioUsecaseImpl;
 import com.restauranthub.multitenant_restaurant_api.core.usecase.ListarUsuariosUsecase;
 import com.restauranthub.multitenant_restaurant_api.core.usecase.ListarUsuariosUsecaseImpl;
+import com.restauranthub.multitenant_restaurant_api.core.usecase.RemoverItemCardapioUsecase;
+import com.restauranthub.multitenant_restaurant_api.core.usecase.RemoverItemCardapioUsecaseImpl;
 import com.restauranthub.multitenant_restaurant_api.core.usecase.RemoverRestauranteUsecase;
 import com.restauranthub.multitenant_restaurant_api.core.usecase.RemoverRestauranteUsecaseImpl;
 import com.restauranthub.multitenant_restaurant_api.core.usecase.RemoverTipoUsuarioUsecase;
@@ -64,6 +77,11 @@ public class InjecaoDependenciaConfiguration {
 	}
 
 	@Bean
+	public ItemCardapioMapper itemCardapioMapper() {
+		return new ItemCardapioMapper();
+	}
+
+	@Bean
 	public CriarUsuarioUsecase criarUsuarioUsecase(UsuarioGateway usuarioGateway) {
 		return new CriarUsuarioUsecaseImpl(usuarioGateway);
 	}
@@ -86,6 +104,39 @@ public class InjecaoDependenciaConfiguration {
 	@Bean
 	public RemoverUsuarioUsecase removerUsuarioUsecase(UsuarioGateway usuarioGateway) {
 		return new RemoverUsuarioUsecaseImpl(usuarioGateway);
+	}
+
+	@Bean
+	public CriarItemCardapioUsecase criarItemCardapioUsecase(ItemCardapioGateway itemCardapioGateway, RestauranteGateway restauranteGateway) {
+		return new CriarItemCardapioUsecaseImpl(itemCardapioGateway, restauranteGateway);
+	}
+
+	@Bean
+	public BuscarItemCardapioPorIdUsecase buscarItemCardapioPorIdUsecase(
+			ItemCardapioGateway itemCardapioGateway,
+			RestauranteGateway restauranteGateway) {
+		return new BuscarItemCardapioPorIdUsecaseImpl(itemCardapioGateway, restauranteGateway);
+	}
+
+	@Bean
+	public ListarItensCardapioPorRestauranteUsecase listarItensCardapioPorRestauranteUsecase(
+			ItemCardapioGateway itemCardapioGateway,
+			RestauranteGateway restauranteGateway) {
+		return new ListarItensCardapioPorRestauranteUsecaseImpl(itemCardapioGateway, restauranteGateway);
+	}
+
+	@Bean
+	public AtualizarItemCardapioUsecase atualizarItemCardapioUsecase(
+			ItemCardapioGateway itemCardapioGateway,
+			RestauranteGateway restauranteGateway) {
+		return new AtualizarItemCardapioUsecaseImpl(itemCardapioGateway, restauranteGateway);
+	}
+
+	@Bean
+	public RemoverItemCardapioUsecase removerItemCardapioUsecase(
+			ItemCardapioGateway itemCardapioGateway,
+			RestauranteGateway restauranteGateway) {
+		return new RemoverItemCardapioUsecaseImpl(itemCardapioGateway, restauranteGateway);
 	}
 
 	@Bean
@@ -198,5 +249,22 @@ public class InjecaoDependenciaConfiguration {
 				atualizarRestauranteUsecase,
 				removerRestauranteUsecase,
 				restauranteMapper);
+	}
+
+	@Bean
+	public ItemCardapioController itemCardapioController(
+			CriarItemCardapioUsecase criarItemCardapioUsecase,
+			BuscarItemCardapioPorIdUsecase buscarItemCardapioPorIdUsecase,
+			ListarItensCardapioPorRestauranteUsecase listarItensCardapioPorRestauranteUsecase,
+			AtualizarItemCardapioUsecase atualizarItemCardapioUsecase,
+			RemoverItemCardapioUsecase removerItemCardapioUsecase,
+			ItemCardapioMapper itemCardapioMapper) {
+		return new ItemCardapioController(
+				criarItemCardapioUsecase,
+				buscarItemCardapioPorIdUsecase,
+				listarItensCardapioPorRestauranteUsecase,
+				atualizarItemCardapioUsecase,
+				removerItemCardapioUsecase,
+				itemCardapioMapper);
 	}
 }
