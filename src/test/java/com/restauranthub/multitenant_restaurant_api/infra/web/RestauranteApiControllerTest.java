@@ -18,6 +18,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.restauranthub.multitenant_restaurant_api.core.domain.TipoUsuarioEnum;
+import com.restauranthub.multitenant_restaurant_api.infra.database.jpa.repository.ItemCardapioRepository;
 import com.restauranthub.multitenant_restaurant_api.infra.database.jpa.repository.RestauranteRepository;
 import com.restauranthub.multitenant_restaurant_api.infra.database.jpa.repository.TipoUsuarioRepository;
 import com.restauranthub.multitenant_restaurant_api.infra.database.jpa.repository.UsuarioRepository;
@@ -45,6 +46,9 @@ class RestauranteApiControllerTest {
 	private MockMvc mockMvc;
 
 	@Autowired
+	private ItemCardapioRepository itemCardapioRepository;
+
+	@Autowired
 	private RestauranteRepository restauranteRepository;
 
 	@Autowired
@@ -57,6 +61,7 @@ class RestauranteApiControllerTest {
 
 	@BeforeEach
 	void setUp() {
+		itemCardapioRepository.deleteAll();
 		restauranteRepository.deleteAll();
 		usuarioRepository.deleteAll();
 		tipoUsuarioRepository.deleteAll();
