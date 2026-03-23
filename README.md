@@ -25,6 +25,45 @@ O domínio não depende de Spring, JPA ou detalhes de infraestrutura.
 mvn spring-boot:run
 ```
 
+## Executar com Docker Compose
+
+```bash
+docker compose up --build
+```
+
+O arquivo `.env` na raiz do projeto concentra todas as variáveis usadas pelo `Dockerfile` e pelo `docker-compose.yml`. Se precisar recriar esse arquivo, use `./.env.example` como base.
+
+Serviços expostos:
+
+- API: `http://localhost:8080`
+- Swagger UI: `http://localhost:8080/swagger-ui/index.html`
+- PostgreSQL: `localhost:5432`
+
+Credenciais padrão do banco no ambiente Docker:
+
+- database: `restaurant_hub`
+- user: `restaurant_hub`
+- password: `restaurant_hub`
+
+Variáveis mais importantes no `.env`:
+
+- `APP_JAR_FILE`: nome do JAR gerado pelo Maven e copiado no `Dockerfile`
+- `API_PORT`: porta publicada da API no host
+- `POSTGRES_PORT`: porta publicada do PostgreSQL no host
+- `SPRING_DATASOURCE_URL`: URL JDBC usada pela aplicação no profile `docker`
+
+Para derrubar o ambiente:
+
+```bash
+docker compose down
+```
+
+Para remover também o volume do banco:
+
+```bash
+docker compose down -v
+```
+
 ## Executar testes e cobertura
 
 ```bash
