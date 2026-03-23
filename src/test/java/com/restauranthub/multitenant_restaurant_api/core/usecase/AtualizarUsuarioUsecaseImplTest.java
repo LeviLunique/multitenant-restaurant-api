@@ -52,22 +52,22 @@ class AtualizarUsuarioUsecaseImplTest {
 
 	@Test
 	void shouldRejectMissingUserDuringUpdate() {
+		var usuarioAtualizado = new Usuario(99L, "Levi", "levi@example.com");
 		when(usuarioGateway.obterPorId(99L)).thenReturn(Optional.empty());
 
-		var exception = assertThrows(ResourceNotFoundException.class,
-				() -> usecase.atualizar(new Usuario(99L, "Levi", "levi@example.com")));
+		var exception = assertThrows(ResourceNotFoundException.class, () -> usecase.atualizar(usuarioAtualizado));
 
 		assertEquals("USER_NOT_FOUND", exception.getCode());
 	}
 
 	@Test
 	void shouldRejectDuplicatedEmailDuringUpdate() {
+		var usuarioAtualizado = new Usuario(1L, "Levi", "maria@example.com");
 		when(usuarioGateway.obterPorId(1L)).thenReturn(Optional.of(new Usuario(1L, "Levi", "levi@example.com")));
 		when(usuarioGateway.obterPorEmail("maria@example.com"))
 				.thenReturn(Optional.of(new Usuario(2L, "Maria", "maria@example.com")));
 
-		var exception = assertThrows(BusinessException.class,
-				() -> usecase.atualizar(new Usuario(1L, "Levi", "maria@example.com")));
+		var exception = assertThrows(BusinessException.class, () -> usecase.atualizar(usuarioAtualizado));
 
 		assertEquals("USER_EMAIL_ALREADY_EXISTS", exception.getCode());
 		verify(usuarioGateway, Mockito.never()).atualizar(any(Usuario.class));
