@@ -13,7 +13,7 @@
 
 	<groupId>com.restauranthub</groupId>
 	<artifactId>multitenant-restaurant-api</artifactId>
-	<version>0.0.5-2-SNAPSHOT</version>
+	<version>0.0.6-1-SNAPSHOT</version>
 	<name>multitenant-restaurant-api</name>
 	<description>Multitenant restaurant API built with Clean Architecture</description>
 
@@ -21,6 +21,7 @@
 		<java.version>21</java.version>
 		<jacoco.version>0.8.14</jacoco.version>
 		<lombok.version>1.18.44</lombok.version>
+		<springdoc.version>2.6.0</springdoc.version>
 		<sonar.coverage.jacoco.xmlReportPaths>${project.basedir}/target/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
 	</properties>
 
@@ -48,6 +49,12 @@
 		<dependency>
 			<groupId>org.flywaydb</groupId>
 			<artifactId>flyway-database-postgresql</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springdoc</groupId>
+			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+			<version>${springdoc.version}</version>
 		</dependency>
 
 		<dependency>
