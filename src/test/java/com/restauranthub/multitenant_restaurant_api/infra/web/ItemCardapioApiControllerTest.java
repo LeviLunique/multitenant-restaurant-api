@@ -31,7 +31,6 @@ class ItemCardapioApiControllerTest {
 	private static final String TIPOS_USUARIO_ENDPOINT = "/tipos-usuario";
 	private static final String USUARIOS_ENDPOINT = "/usuarios";
 	private static final String DONO_NOME = "Dono Principal";
-	private static final String DONO_EMAIL = "dono@example.com";
 	private static final String DONO_TIPO_NOME = "Dono de Restaurante";
 	private static final String RESTAURANTE_NOME = "Bistrô Central";
 	private static final String RESTAURANTE_ENDERECO = "Rua A, 100";
@@ -193,7 +192,7 @@ class ItemCardapioApiControllerTest {
 	private long criarDonoUsuario(String sufixoNome, String email) throws Exception {
 		var usuarioId = criarUsuario(DONO_NOME + " " + sufixoNome, email);
 		var tipoUsuarioId = tipoUsuarioRepository.findByTipo(TipoUsuarioEnum.DONO)
-				.map(tipoUsuario -> tipoUsuario.getId())
+				.map(com.restauranthub.multitenant_restaurant_api.infra.database.jpa.entity.TipoUsuarioEntity::getId)
 				.orElseGet(() -> {
 					try {
 						return criarTipoUsuario(DONO_TIPO_NOME, TipoUsuarioEnum.DONO);
