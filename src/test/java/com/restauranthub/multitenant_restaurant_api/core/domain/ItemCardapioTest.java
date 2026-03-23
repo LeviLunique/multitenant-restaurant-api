@@ -11,6 +11,13 @@ import com.restauranthub.multitenant_restaurant_api.core.exception.BusinessExcep
 
 class ItemCardapioTest {
 
+	private static final Long ITEM_ID = 1L;
+	private static final Long RESTAURANTE_ID = 10L;
+	private static final String ITEM_NOME = "Risoto";
+	private static final String ITEM_DESCRICAO = "Descricao";
+	private static final BigDecimal ITEM_PRECO = new BigDecimal("49.90");
+	private static final String ITEM_CAMINHO_FOTO = "/foto.jpg";
+
 	@Test
 	void shouldCreateMenuItemWithValidData() {
 		var itemCardapio = new ItemCardapio(1L, 10L, "Risoto", "Risoto de cogumelos", new BigDecimal("49.90"), true, "/fotos/risoto.jpg");
@@ -26,31 +33,51 @@ class ItemCardapioTest {
 
 	@Test
 	void shouldRejectBlankName() {
-		assertThrows(BusinessException.class, () -> new ItemCardapio(1L, 10L, " ", "Descricao", new BigDecimal("49.90"), true, "/foto.jpg"));
+		var nomeInvalido = " ";
+
+		assertThrows(BusinessException.class, () -> criarItemCardapio(nomeInvalido, ITEM_DESCRICAO, ITEM_PRECO, true, ITEM_CAMINHO_FOTO, RESTAURANTE_ID));
 	}
 
 	@Test
 	void shouldRejectBlankDescription() {
-		assertThrows(BusinessException.class, () -> new ItemCardapio(1L, 10L, "Risoto", " ", new BigDecimal("49.90"), true, "/foto.jpg"));
+		var descricaoInvalida = " ";
+
+		assertThrows(BusinessException.class, () -> criarItemCardapio(ITEM_NOME, descricaoInvalida, ITEM_PRECO, true, ITEM_CAMINHO_FOTO, RESTAURANTE_ID));
 	}
 
 	@Test
 	void shouldRejectInvalidPrice() {
-		assertThrows(BusinessException.class, () -> new ItemCardapio(1L, 10L, "Risoto", "Descricao", BigDecimal.ZERO, true, "/foto.jpg"));
+		var precoInvalido = BigDecimal.ZERO;
+
+		assertThrows(BusinessException.class, () -> criarItemCardapio(ITEM_NOME, ITEM_DESCRICAO, precoInvalido, true, ITEM_CAMINHO_FOTO, RESTAURANTE_ID));
 	}
 
 	@Test
 	void shouldRejectNullLocalConsumptionAvailability() {
-		assertThrows(BusinessException.class, () -> new ItemCardapio(1L, 10L, "Risoto", "Descricao", new BigDecimal("49.90"), null, "/foto.jpg"));
+		assertThrows(BusinessException.class, () -> criarItemCardapio(ITEM_NOME, ITEM_DESCRICAO, ITEM_PRECO, null, ITEM_CAMINHO_FOTO, RESTAURANTE_ID));
 	}
 
 	@Test
 	void shouldRejectBlankPhotoPath() {
-		assertThrows(BusinessException.class, () -> new ItemCardapio(1L, 10L, "Risoto", "Descricao", new BigDecimal("49.90"), true, " "));
+		var caminhoFotoInvalido = " ";
+
+		assertThrows(BusinessException.class, () -> criarItemCardapio(ITEM_NOME, ITEM_DESCRICAO, ITEM_PRECO, true, caminhoFotoInvalido, RESTAURANTE_ID));
 	}
 
 	@Test
 	void shouldRejectInvalidRestaurantId() {
-		assertThrows(BusinessException.class, () -> new ItemCardapio(1L, 0L, "Risoto", "Descricao", new BigDecimal("49.90"), true, "/foto.jpg"));
+		var restauranteIdInvalido = 0L;
+
+		assertThrows(BusinessException.class, () -> criarItemCardapio(ITEM_NOME, ITEM_DESCRICAO, ITEM_PRECO, true, ITEM_CAMINHO_FOTO, restauranteIdInvalido));
+	}
+
+	private ItemCardapio criarItemCardapio(
+			String nome,
+			String descricao,
+			BigDecimal preco,
+			Boolean apenasConsumoNoLocal,
+			String caminhoFoto,
+			Long restauranteId) {
+		return new ItemCardapio(ITEM_ID, restauranteId, nome, descricao, preco, apenasConsumoNoLocal, caminhoFoto);
 	}
 }
